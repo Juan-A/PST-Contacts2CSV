@@ -15,6 +15,6 @@ This project uses the following libraries:
 * [Apache Commons CSV](https://commons.apache.org/proper/commons-csv/) by Apache Foundation.
 * [Opencsv](http://opencsv.sourceforge.net/) by OpenCSV project team and collaborators.
 * [libpst](https://github.com/rjohnsondev/java-libpst) by Richard Johnson.
-* 
+
 ## License
 * This project is under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0) (compatible with GPL v3).
