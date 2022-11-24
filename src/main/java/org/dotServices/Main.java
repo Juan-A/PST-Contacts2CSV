@@ -50,7 +50,7 @@ public class Main {
         }
     }
 
-    public static void exportAllFolders(PSTFolder pstFolder,Map<String,String > mailDirections) throws IOException, PSTException {
+    public static void exportAllFolders(PSTFolder pstFolder, Map<String, String> mailDirections) throws IOException, PSTException {
         // the root folder doesn't have a display name
         if (pstFolder.getDisplayName() != null) {
             System.out.println("Processed folder: " + pstFolder.getDisplayName());
@@ -60,7 +60,7 @@ public class Main {
         if (pstFolder.hasSubfolders()) {
             List<PSTFolder> childFolders = pstFolder.getSubFolders();
             for (PSTFolder childFolder : childFolders) {
-                exportAllFolders(childFolder,mailDirections);
+                exportAllFolders(childFolder, mailDirections);
             }
         }
 
@@ -168,7 +168,7 @@ public class Main {
         }
     }
 
-    public static void generateCSV(String fileName, Map<String, String> mailDirections) throws  IOException {
+    public static void generateCSV(String fileName, Map<String, String> mailDirections) throws IOException {
         //creates the csv file utf-8
         CSVWriter writer = new CSVWriter(new FileWriter(fileName + ".csv"), ';', CSVWriter.NO_QUOTE_CHARACTER, CSVWriter.DEFAULT_ESCAPE_CHARACTER, CSVWriter.DEFAULT_LINE_END);
 
