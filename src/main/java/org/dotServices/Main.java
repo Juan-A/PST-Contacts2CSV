@@ -24,6 +24,7 @@ public class Main {
 
     public Main(String fileName) {
         Scanner keyboard = new Scanner(System.in);
+        Map<String, String> mailDirections = new HashMap<>();
         char especifyExport = 0;
         try {
             PSTFile pstFile = new PSTFile(fileName);
@@ -38,7 +39,9 @@ public class Main {
                     proccessFolder(pstFile.getRootFolder());
                     break;
                 case '2':
-                    exportAllFolders(pstFile.getRootFolder());
+                    exportAllFolders(pstFile.getRootFolder(), mailDirections);
+                    System.out.println("Enter a name for the file(without extension): ");
+                    generateCSV(keyboard.next(), mailDirections);
 
             }
 
@@ -47,17 +50,17 @@ public class Main {
         }
     }
 
-    public static void exportAllFolders(PSTFolder pstFolder) throws IOException, PSTException {
+    public static void exportAllFolders(PSTFolder pstFolder,Map<String,String > mailDirections) throws IOException, PSTException {
         // the root folder doesn't have a display name
         if (pstFolder.getDisplayName() != null) {
-            System.out.println("Folder: " + pstFolder.getDisplayName());
+            System.out.println("Processed folder: " + pstFolder.getDisplayName());
         }
 
         // go through the folders...
         if (pstFolder.hasSubfolders()) {
             List<PSTFolder> childFolders = pstFolder.getSubFolders();
             for (PSTFolder childFolder : childFolders) {
-                exportAllFolders(childFolder);
+                exportAllFolders(childFolder,mailDirections);
             }
         }
 
@@ -65,8 +68,6 @@ public class Main {
         // and now the emails for this folder
         if (pstFolder.getContentCount() > 0) {
 
-            Map<String, String> mailDirections = new HashMap<>();
-            //creates the record if it doesn't exist
             PSTMessage message = (PSTMessage) pstFolder.getNextChild();
 
             while (message != null) {
