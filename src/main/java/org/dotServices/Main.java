@@ -46,9 +46,9 @@ public class Main {
         //Creates an auxiliar folder object to select and explore the subfolder.
         PSTFolder selectedSubFolder;
 
-        if(pstFolder.hasSubfolders()){
+        if (pstFolder.hasSubfolders()) {
             System.out.println("Number of subfolders: " + pstFolder.getSubFolderCount());
-            for(PSTFolder subFolder : folders){
+            for (PSTFolder subFolder : folders) {
                 //Prints the name of the subfolders with their index.
                 System.out.println(counter + " - " + subFolder.getDisplayName());
                 counter++;
@@ -56,21 +56,19 @@ public class Main {
         }
         System.out.print("Select a folder (by index number): ");
         selectedSubFolder = folders.get(keyboard.nextInt());
-        if(selectedSubFolder.hasSubfolders()){
+        if (selectedSubFolder.hasSubfolders()) {
             proccessFolder(selectedSubFolder);
-        }
-        else{
+        } else {
             System.out.println("No subfolders found, do you want to export the records? (y/n)");
-            switch (keyboard.next()){
+            switch (keyboard.next()) {
                 case "y":
                     System.out.println("Contents of the folder " + selectedSubFolder.getDisplayName());
-                    if(emailsNumber(selectedSubFolder) > 0){
+                    if (emailsNumber(selectedSubFolder) > 0) {
                         System.out.println("There are " + emailsNumber(selectedSubFolder) + " mails in this folder.");
                         System.out.println("There are " + selectedSubFolder.getContentCount() + " elements in this folder.");
                         exportAdresses(selectedSubFolder);
 
-                    }
-                    else{
+                    } else {
                         System.out.println("There are no mails in this folder.");
                     }
                     break;
@@ -84,21 +82,19 @@ public class Main {
         }
 
 
-
-
     }
+
     public static int emailsNumber(PSTFolder pstFolder) throws PSTException, IOException {
         return pstFolder.getEmailCount();
     }
+
     public static void exportAdresses(PSTFolder pstFolder) throws PSTException, IOException {
         Scanner keyboard = new Scanner(System.in);
         System.out.print("Do you want to export the adresses? (y/n): ");
-        switch (keyboard.next()){
+        switch (keyboard.next()) {
             case "y":
-                System.out.println("Is it an inbox or outbox? (i/o): ");
-                char inboxOrOutbox = keyboard.next().charAt(0);
                 System.out.println("Please enter a name for the file (without extension): ");
-                generateCSV(keyboard.next(), pstFolder, inboxOrOutbox);
+                generateCSV(keyboard.next(), pstFolder);
 
                 break;
             case "n":
@@ -109,40 +105,30 @@ public class Main {
                 break;
         }
     }
-    public static void generateCSV(String fileName, PSTFolder pstFolder, char inboxOrOutbox) throws PSTException, IOException {
+
+    public static void generateCSV(String fileName, PSTFolder pstFolder) throws PSTException, IOException {
         //creates the csv file utf-8
         CSVWriter writer = new CSVWriter(new FileWriter(fileName + ".csv"), ',', CSVWriter.NO_QUOTE_CHARACTER, CSVWriter.DEFAULT_ESCAPE_CHARACTER, CSVWriter.DEFAULT_LINE_END);
 
-        Map<String,String> mailSenders = new HashMap<>();
+        Map<String, String> mailDirections = new HashMap<>();
         //creates the record if it doesn't exist
         PSTMessage message = (PSTMessage) pstFolder.getNextChild();
-        switch (inboxOrOutbox){
-            case 'i':
-                while (message != null) {
-                    if(!mailSenders.containsKey(message.getSenderEmailAddress())){
-                        mailSenders.put(message.getSenderEmailAddress(), message.getSenderName());
-                    }
-                    message = (PSTMessage) pstFolder.getNextChild();
-                }
-                break;
-            case 'o':
-                while (message != null) {
-                    if(!mailSenders.containsKey(message.getEmailAddress())){
-                        mailSenders.put(message.getEmailAddress(), message.getDisplayName());
-                    }
-                    message = (PSTMessage) pstFolder.getNextChild();
-                }
-                break;
-            default:
-                System.out.println("Not valid option.");
-                break;
+
+
+        while (message != null) {
+            if (!mailDirections.containsKey(message.getSenderEmailAddress())) {
+                mailDirections.put(message.getSenderEmailAddress(), message.getSenderName());
+            }
+            if (!mailDirections.containsKey(message.getEmailAddress())) {
+                mailDirections.put(message.getEmailAddress(), message.getDisplayName());
+            }
+            message = (PSTMessage) pstFolder.getNextChild();
         }
 
-        //writes the record to file
-        Iterator<String> it = mailSenders.keySet().iterator();
-        while(it.hasNext()){
-            String key = it.next();
-            String[] record = {key, mailSenders.get(key)};
+
+        //writes the records to file
+        for (String key : mailDirections.keySet()) {
+            String[] record = {key, mailDirections.get(key)};
             writer.writeNext(record);
         }
         writer.close();
