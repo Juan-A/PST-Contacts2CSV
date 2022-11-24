@@ -23,14 +23,61 @@ public class Main {
     }
 
     public Main(String fileName) {
+        Scanner keyboard = new Scanner(System.in);
+        char especifyExport = 0;
         try {
             PSTFile pstFile = new PSTFile(fileName);
             //Prints the display name of the PST file.
             System.out.println("File title: " + pstFile.getMessageStore().getDisplayName());
-            proccessFolder(pstFile.getRootFolder());
+            while (especifyExport != '1' && especifyExport != '2') {
+                System.out.print("Do you want to specify the folder(1) or extract all the email contacts(2)?: ");
+                especifyExport = keyboard.next().charAt(0);
+            }
+            switch (especifyExport) {
+                case '1':
+                    proccessFolder(pstFile.getRootFolder());
+                    break;
+                case '2':
+                    exportAllFolders(pstFile.getRootFolder());
+
+            }
 
         } catch (Exception err) {
             err.printStackTrace();
+        }
+    }
+
+    public static void exportAllFolders(PSTFolder pstFolder) throws IOException, PSTException {
+        // the root folder doesn't have a display name
+        if (pstFolder.getDisplayName() != null) {
+            System.out.println("Folder: " + pstFolder.getDisplayName());
+        }
+
+        // go through the folders...
+        if (pstFolder.hasSubfolders()) {
+            List<PSTFolder> childFolders = pstFolder.getSubFolders();
+            for (PSTFolder childFolder : childFolders) {
+                exportAllFolders(childFolder);
+            }
+        }
+
+
+        // and now the emails for this folder
+        if (pstFolder.getContentCount() > 0) {
+
+            Map<String, String> mailDirections = new HashMap<>();
+            //creates the record if it doesn't exist
+            PSTMessage message = (PSTMessage) pstFolder.getNextChild();
+
+            while (message != null) {
+                if (!mailDirections.containsKey(message.getSenderEmailAddress())) {
+                    mailDirections.put(message.getSenderEmailAddress(), message.getSenderName());
+                }
+                if (!mailDirections.containsKey(message.getReceivedByAddress())) {
+                    mailDirections.put(message.getReceivedByAddress(), message.getReceivedByName());
+                }
+                message = (PSTMessage) pstFolder.getNextChild();
+            }
         }
     }
 
@@ -46,9 +93,9 @@ public class Main {
         //Creates an auxiliar folder object to select and explore the subfolder.
         PSTFolder selectedSubFolder;
 
-        if(pstFolder.hasSubfolders()){
+        if (pstFolder.hasSubfolders()) {
             System.out.println("Number of subfolders: " + pstFolder.getSubFolderCount());
-            for(PSTFolder subFolder : folders){
+            for (PSTFolder subFolder : folders) {
                 //Prints the name of the subfolders with their index.
                 System.out.println(counter + " - " + subFolder.getDisplayName());
                 counter++;
@@ -56,21 +103,19 @@ public class Main {
         }
         System.out.print("Select a folder (by index number): ");
         selectedSubFolder = folders.get(keyboard.nextInt());
-        if(selectedSubFolder.hasSubfolders()){
+        if (selectedSubFolder.hasSubfolders()) {
             proccessFolder(selectedSubFolder);
-        }
-        else{
+        } else {
             System.out.println("No subfolders found, do you want to export the records? (y/n)");
-            switch (keyboard.next()){
+            switch (keyboard.next()) {
                 case "y":
                     System.out.println("Contents of the folder " + selectedSubFolder.getDisplayName());
-                    if(emailsNumber(selectedSubFolder) > 0){
+                    if (emailsNumber(selectedSubFolder) > 0) {
                         System.out.println("There are " + emailsNumber(selectedSubFolder) + " mails in this folder.");
                         System.out.println("There are " + selectedSubFolder.getContentCount() + " elements in this folder.");
                         exportAdresses(selectedSubFolder);
 
-                    }
-                    else{
+                    } else {
                         System.out.println("There are no mails in this folder.");
                     }
                     break;
@@ -84,21 +129,33 @@ public class Main {
         }
 
 
-
-
     }
+
     public static int emailsNumber(PSTFolder pstFolder) throws PSTException, IOException {
         return pstFolder.getEmailCount();
     }
+
     public static void exportAdresses(PSTFolder pstFolder) throws PSTException, IOException {
         Scanner keyboard = new Scanner(System.in);
+        Map<String, String> mailDirections = new HashMap<>();
+        //creates the record if it doesn't exist
+        PSTMessage message = (PSTMessage) pstFolder.getNextChild();
+
+
+        while (message != null) {
+            if (!mailDirections.containsKey(message.getSenderEmailAddress())) {
+                mailDirections.put(message.getSenderEmailAddress(), message.getSenderName());
+            }
+            if (!mailDirections.containsKey(message.getReceivedByAddress())) {
+                mailDirections.put(message.getReceivedByAddress(), message.getReceivedByName());
+            }
+            message = (PSTMessage) pstFolder.getNextChild();
+        }
         System.out.print("Do you want to export the adresses? (y/n): ");
-        switch (keyboard.next()){
+        switch (keyboard.next()) {
             case "y":
-                System.out.println("Is it an inbox or outbox? (i/o): ");
-                char inboxOrOutbox = keyboard.next().charAt(0);
                 System.out.println("Please enter a name for the file (without extension): ");
-                generateCSV(keyboard.next(), pstFolder, inboxOrOutbox);
+                generateCSV(keyboard.next(), mailDirections);
 
                 break;
             case "n":
@@ -109,40 +166,15 @@ public class Main {
                 break;
         }
     }
-    public static void generateCSV(String fileName, PSTFolder pstFolder, char inboxOrOutbox) throws PSTException, IOException {
+
+    public static void generateCSV(String fileName, Map<String, String> mailDirections) throws  IOException {
         //creates the csv file utf-8
-        CSVWriter writer = new CSVWriter(new FileWriter(fileName + ".csv"), ',', CSVWriter.NO_QUOTE_CHARACTER, CSVWriter.DEFAULT_ESCAPE_CHARACTER, CSVWriter.DEFAULT_LINE_END);
+        CSVWriter writer = new CSVWriter(new FileWriter(fileName + ".csv"), ';', CSVWriter.NO_QUOTE_CHARACTER, CSVWriter.DEFAULT_ESCAPE_CHARACTER, CSVWriter.DEFAULT_LINE_END);
 
-        Map<String,String> mailSenders = new HashMap<>();
-        //creates the record if it doesn't exist
-        PSTMessage message = (PSTMessage) pstFolder.getNextChild();
-        switch (inboxOrOutbox){
-            case 'i':
-                while (message != null) {
-                    if(!mailSenders.containsKey(message.getSenderEmailAddress())){
-                        mailSenders.put(message.getSenderEmailAddress(), message.getSenderName());
-                    }
-                    message = (PSTMessage) pstFolder.getNextChild();
-                }
-                break;
-            case 'o':
-                while (message != null) {
-                    if(!mailSenders.containsKey(message.getEmailAddress())){
-                        mailSenders.put(message.getEmailAddress(), message.getDisplayName());
-                    }
-                    message = (PSTMessage) pstFolder.getNextChild();
-                }
-                break;
-            default:
-                System.out.println("Not valid option.");
-                break;
-        }
 
-        //writes the record to file
-        Iterator<String> it = mailSenders.keySet().iterator();
-        while(it.hasNext()){
-            String key = it.next();
-            String[] record = {key, mailSenders.get(key)};
+        //writes the records to file
+        for (String key : mailDirections.keySet()) {
+            String[] record = {key, mailDirections.get(key)};
             writer.writeNext(record);
         }
         writer.close();
